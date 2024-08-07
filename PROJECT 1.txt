@@ -1,0 +1,104 @@
+#include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
+const int bz = A3;
+const int ms=A0;
+const int relay=A1;
+const int ir=4;
+LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
+const int trigPin1 = A5;
+const int echoPin1 = A4;
+long duration, distance,levelSensor;
+#include <SoftwareSerial.h>
+SoftwareSerial ss(2,3);
+void SendMessage(String data)
+{
+ Serial.print("start");
+ ss.println("AT+CMGF=1"); 
+ delay(1000); 
+ ss.println("AT+CMGS=\"+918019343836\"\r"); 
+ delay(1000);
+ ss.println(data);
+ delay(100);
+ ss.println((char)26);
+ delay(1000);
+}
+void setup() {
+ Serial.begin(9600);
+ pinMode(bz,OUTPUT);
+ pinMode(trigPin1, OUTPUT);
+ pinMode(relay, OUTPUT);
+ pinMode(echoPin1, INPUT);
+28
+ pinMode(ms, INPUT);
+ pinMode(ir,INPUT);
+ lcd.begin(16, 2); // Set up the LCD's number of columns and rows
+ lcd.setCursor(0,0);
+ lcd.print("SYSTEM ACTIVATED");
+ digitalWrite(bz,LOW);
+ delay(2000);
+ lcd.clear();
+ lcd.setCursor(0,0);
+ lcd.print("WTR LEVEL:");
+ lcd.setCursor(0,1);
+ lcd.print("MS:");
+ lcd.setCursor(9,1);
+ lcd.print("M:");
+ digitalWrite(relay,HIGH);
+ ss.begin(9600);
+}
+void loop() {
+ SonarSensor(trigPin1, echoPin1);
+ levelSensor = distance;
+ int x=digitalRead(ms);
+ if(x==0)
+ {
+ lcd.setCursor(4,1);
+ lcd.print("WET");
+ lcd.setCursor(11,1);
+ lcd.print("OFF");
+ digitalWrite(relay,HIGH);
+ }
+ else
+ {
+ lcd.setCursor(4,1);
+29
+ lcd.print("DRY");
+ lcd.setCursor(11,1);
+ lcd.print("ON");
+ digitalWrite(relay,LOW);
+ }
+ delay(200); 
+ lcd.setCursor(11,0);
+ lcd.print(levelSensor);
+ lcd.print(" ");
+ int y=digitalRead(ir);
+ Serial.print("ir:");
+ Serial.print(y);
+ delay(500);
+ if(levelSensor<10||y==0)
+ {
+ digitalWrite(bz,HIGH);
+ if(levelSensor<10){
+ SendMessage("Water level HIGH Alert!");
+ Serial.print("w alert");
+ }
+ else
+ {
+ SendMessage("Animal Detected Alert!");
+ }
+ }
+ else
+ { 
+ digitalWrite(bz,LOW);
+ }
+ }
+ void SonarSensor(int trigPin, int echoPin)
+{
+30
+ digitalWrite(trigPin, LOW);
+ delayMicroseconds(2);
+ digitalWrite(trigPin, HIGH);
+ delayMicroseconds(10);
+ digitalWrite(trigPin, LOW);
+ duration = pulseIn(echoPin, HIGH);
+ distance = (duration / 2) / 29.1;
